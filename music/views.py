@@ -1,7 +1,26 @@
-from django.http import HttpResponse
+from django.shortcuts import render, get_object_or_404
+from django.http import Http404
+from music.models import album, song
 
 def index(request):
-    return HttpResponse("<h1> This is a Music App Home Page")
+    all_albums = album.objects.all()
+    context = {'all_albums': all_albums}
+    return render(request,'music/index.html' ,context)
 
 def detail(request, album_id):
-        return HttpResponse("<h2> Details of Album id: " + str(album_id)+ "<h2>")
+       #albums = album.objects.get(pk=album_id)
+        albums = get_object_or_404(album, pk=album_id)
+        return render(request,'music/detail.html',{'album' : albums})
+
+def favorite(request, album_id):
+      albums = get_object_or_404(album, pk= album_id)
+      
+      try:
+          selected_song = albums.song_set.get(pk=request.POST['song'])
+      except (KeyError, song.DoesNotExist):
+          return render(request, 'music/detail.html', {'album' : albums ,
+          'error_message': "You did not select a valid song"})
+      else:
+          selected_song.is_fav = True
+          selected_song.save()
+          return render(request, 'music/detail.html', {'album' : albums})
